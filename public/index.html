@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - morph targets</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background:#fff;
+				padding:0;
+				margin:0;
+				overflow:hidden;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<script src="build/three.min.js"></script>
+		<script src="js/libs/querystring.min.js"></script>
+
+		<script>
+
+			var container;
+			var camera, cameraCube, scene, sceneCube, projector, renderer;
+			var mesh, morph;
+
+			var gui, morphConfig;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				var info = document.createElement( 'div' );
+				info.style.position = 'absolute';
+				info.style.top = '10px';
+				info.style.width = '100%';
+				info.style.textAlign = 'center';
+				info.innerHTML = '';
+				container.appendChild( info );
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100000 );
+				camera.position.y = 300;
+				camera.target = new THREE.Vector3( 0, 130, 0 );
+
+				cameraCube = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100000 );
+				cameraCube.position.y = 300;
+				cameraCube.target = new THREE.Vector3( 0, 130, 0 );
+
+				scene = new THREE.Scene();
+				sceneCube = new THREE.Scene();
+
+				// lights
+
+				//var ambient = new THREE.AmbientLight( 0xffffff );
+				//scene.add( ambient );
+
+				var light = new THREE.DirectionalLight( 0xefefff, 2 );
+				light.position.set( 1, 1, 1 ).normalize();
+				scene.add( light );
+
+				var light = new THREE.DirectionalLight( 0xffefef, 2 );
+				light.position.set( -1, -1, -1 ).normalize();
+				scene.add( light );
+
+				var cubeMaterial2 = new THREE.MeshPhongMaterial( { color: 0xee2222, shininess: 100, combine: THREE.MultiplyOperation, refractionRatio: 0.97, reflectivity: 1, morphTargets: true, morphNormals: true } );
+
+				var loader = new THREE.JSONLoader();
+				loader.load( "models/json/TestBody.json", function( geometry ) {
+
+					geometry.computeVertexNormals();
+					geometry.computeMorphNormals();
+
+					morph = new THREE.Mesh( geometry, cubeMaterial2 );
+					morph.scale.set( 70, 70, 70);
+					scene.add( morph );
+
+					applyTransform();
+
+				} );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0xFFFFFF );
+				renderer.autoClear = false;
+				renderer.autoClear = true;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild(renderer.domElement);
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function applyTransform() {
+				var q = window.location.search.replace('?', '');
+
+				if (q && q.length) {
+					var morphTargets = querystring.parse(q);
+
+					if (morphTargets.target1) {
+						morph.morphTargetInfluences[1] = parseFloat(morphTargets.target1);
+					}
+
+					if (morphTargets.target2) {
+						morph.morphTargetInfluences[2] = parseFloat(morphTargets.target2);
+					}
+
+					if (morphTargets.target3) {
+						morph.morphTargetInfluences[3] = parseFloat(morphTargets.target3);
+					}
+				}
+			};
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			var animationCallback;
+
+			function animate() {
+				animationCallback = requestAnimationFrame( animate );
+				render();
+			}
+
+			var radius = 600;
+			var theta = 0;
+
+			var prevTime = Date.now();
+
+			var instances = 0;
+
+			function render() {
+
+				//if ( morph ) morph.rotation.y += 0.012;
+				if (morph) morph.rotation.y = 1.66;
+
+				theta += 0;
+
+				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+
+				cameraCube.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+				cameraCube.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+
+				camera.lookAt( camera.target );
+				cameraCube.lookAt( camera.target );
+
+				//renderer.render( sceneCube, cameraCube );
+				renderer.render( scene, camera );
+
+				var img = renderer.domElement.toDataURL( 'image/png' );
+				console.log(img);
+
+				instances++;
+
+				if (instances > 5) {
+					cancelAnimationFrame( animationCallback );
+				}
+			}
+
+		</script>
+
+	</body>
+</html>
